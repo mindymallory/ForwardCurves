@@ -92,6 +92,8 @@ corn_contract8 <- cbind(corn_contract8, "", "")
 soy_contract8 <- soy_forward8(sm, Year)
 soy_contract8 <- cbind(soy_contract8, "", "")
 
+
+# Fetch Corn Quotes
 for (i in 1:8){
   
   corn_contract8[i, 3] <- paste0("C", corn_contract8[i,1], substr(corn_contract8[i, 2], 3,4), ".", "CBT")
@@ -99,7 +101,7 @@ for (i in 1:8){
 }
 
 
-
+# Fetch Soy Quotes
 for (i in 1:8){
   
   soy_contract8[i, 3] <- paste0("S", soy_contract8[i,1], substr(soy_contract8[i, 2], 3,4), ".", "CBT")
