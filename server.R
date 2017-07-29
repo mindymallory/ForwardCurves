@@ -108,10 +108,27 @@ for (i in 1:8){
   soy_contract8[i, 4] <- as.numeric(getQuote(soy_contract8[i,3])[2])
 } 
 
+
+
 plot(corn_contract8[,4])
 plot(soy_contract8[,4])
 
+colnames(corn_contract8) <- c("Month", "Year", "Contract", "Price")
+colnames(soy_contract8) <- c("Month", "Year", "Contract", "Price")
 
+corn_contract8 <- as.data.frame(corn_contract8)
+corn_contract8$Contract <- substr(corn_contract8$Contract, 1,4)
+corn_contract8$Contract <- factor(corn_contract8$Contract, levels = unique(corn_contract8$Contract))
+corn_contract8$Price <- as.numeric(as.character(corn_contract8$Price))
+soy_contract8 <- as.data.frame(soy_contract8)
+soy_contract8$Contract <- substr(soy_contract8$Contract, 1,4)
+soy_contract8$Contract <- factor(soy_contract8$Contract, levels = unique(soy_contract8$Contract))
+soy_contract8$Price <- as.numeric(as.character(soy_contract8$Price))
+
+c <- ggplot(corn_contract8, aes(Contract, Price)) + geom_point()
+s <- ggplot(soy_contract8, aes(Contract, Price)) + geom_point()
+c
+s
 library(shiny)
 
 # Define server logic required to draw a histogram
