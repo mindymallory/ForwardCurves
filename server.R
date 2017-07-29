@@ -88,16 +88,19 @@ cm <- get_nearby_corn(MonthCode)
 sm <- get_nearby_soy(MonthCode)
 
 corn_contract8 <- corn_forward8(cm, Year)
-corn_contract8 <- cbind(corn_contract8, "", "")
+corn_contract8 <- cbind(corn_contract8, "", "","","")
 soy_contract8 <- soy_forward8(sm, Year)
-soy_contract8 <- cbind(soy_contract8, "", "")
+soy_contract8 <- cbind(soy_contract8, "", "","","")
 
+codes <- c('F', 'G', 'H', 'J', 'K', 'M', 'N', 'Q', 'U', 'V', 'X', 'Z')
 
 # Fetch Corn Quotes
 for (i in 1:8){
-  
+ 
   corn_contract8[i, 3] <- paste0("C", corn_contract8[i,1], substr(corn_contract8[i, 2], 3,4), ".", "CBT")
   corn_contract8[i, 4] <- as.numeric(getQuote(corn_contract8[i,3])[2])
+  corn_contract8[i, 5] <- format(as.Date(paste0(sprintf("%02d", match(corn_contract8[i,1], codes)), "/", "14", "/", substr(corn_contract8[i, 2], 3,4)), "%m/%d/%y"), "%Y-%m-%d")
+  corn_contract8[i, 6] <- as.Date(corn_contract8[i, 5]) - Sys.Date()
 }
 
 
@@ -106,29 +109,31 @@ for (i in 1:8){
   
   soy_contract8[i, 3] <- paste0("S", soy_contract8[i,1], substr(soy_contract8[i, 2], 3,4), ".", "CBT")
   soy_contract8[i, 4] <- as.numeric(getQuote(soy_contract8[i,3])[2])
+  soy_contract8[i, 5] <- format(as.Date(paste0(sprintf("%02d", match(soy_contract8[i,1], codes)), "/", "14", "/", substr(soy_contract8[i, 2], 3,4)), "%m/%d/%y"), "%Y-%m-%d")
+  soy_contract8[i, 6] <- as.Date(soy_contract8[i, 5]) - Sys.Date()
+  
 } 
 
-
-
-plot(corn_contract8[,4])
-plot(soy_contract8[,4])
-
-colnames(corn_contract8) <- c("Month", "Year", "Contract", "Price")
-colnames(soy_contract8) <- c("Month", "Year", "Contract", "Price")
+colnames(corn_contract8) <- c("Month", "Year", "Contract", "Price", "Expiration", "DTE")
+colnames(soy_contract8) <- c("Month", "Year", "Contract", "Price", "Expiration", "DTE")
 
 corn_contract8 <- as.data.frame(corn_contract8)
 corn_contract8$Contract <- substr(corn_contract8$Contract, 1,4)
-corn_contract8$Contract <- factor(corn_contract8$Contract, levels = unique(corn_contract8$Contract))
+corn_contract8$DTE <- as.numeric(as.character(corn_contract8$DTE))
 corn_contract8$Price <- as.numeric(as.character(corn_contract8$Price))
 soy_contract8 <- as.data.frame(soy_contract8)
 soy_contract8$Contract <- substr(soy_contract8$Contract, 1,4)
-soy_contract8$Contract <- factor(soy_contract8$Contract, levels = unique(soy_contract8$Contract))
+soy_contract8$DTE <- as.numeric(as.character(soy_contract8$DTE))
 soy_contract8$Price <- as.numeric(as.character(soy_contract8$Price))
 
-c <- ggplot(corn_contract8, aes(Contract, Price)) + geom_point()
-s <- ggplot(soy_contract8, aes(Contract, Price)) + geom_point()
+c <- ggplot(corn_contract8, aes(DTE, Price)) + geom_point() + geom_text(aes(label=Contract), size = 3)
+s <- ggplot(soy_contract8, aes(DTE, Price)) + geom_point() + geom_text(aes(label=Contract), size = 3)
 c
 s
+
+            
+            
+            
 library(shiny)
 
 # Define server logic required to draw a histogram
