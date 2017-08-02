@@ -126,8 +126,8 @@ soy_contract8$Contract <- substr(soy_contract8$Contract, 1,4)
 soy_contract8$DTE <- as.numeric(as.character(soy_contract8$DTE))
 soy_contract8$Price <- as.numeric(as.character(soy_contract8$Price))
 
-c <- ggplot(corn_contract8, aes(DTE, Price)) + geom_point() + geom_text(aes(label=Contract), size = 3)
-s <- ggplot(soy_contract8, aes(DTE, Price)) + geom_point() + geom_text(aes(label=Contract), size = 3)
+c <- ggplot(corn_contract8, aes(DTE, Price)) + geom_point() + geom_text(aes(label=Contract), size = 3, nudge_y = 5) + theme_bw()
+s <- ggplot(soy_contract8, aes(DTE, Price)) + geom_point() + geom_text(aes(label=Contract), size = 3, nudge_y = 5) + theme_bw()
 c
 s
 
@@ -146,12 +146,12 @@ shinyServer(function(input, output) {
   #     re-executed when inputs change
   #  2) Its output type is a plot
   
-  output$distPlot <- renderPlot({
-    x    <- faithful[, 2]  # Old Faithful Geyser data
-    bins <- seq(min(x), max(x), length.out = input$bins + 1)
-    
-    # draw the histogram with the specified number of bins
-    hist(x, breaks = bins, col = 'darkgray', border = 'white')
+  output$CornPlot <- renderPlot({
+    c
+  })
+  
+  output$CornPlot <- renderPlot({
+    s
   })
   
 })
