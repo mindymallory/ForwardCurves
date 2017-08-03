@@ -1,0 +1,278 @@
+---
+title: "Forward Curves"
+runtime: shiny
+output: 
+  html_notebook: 
+    code_folding: none
+    theme: flatly
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library(shiny)
+library(ggplot2)
+library(quantmod)
+library(xts)
+library(lubridate)
+library(ArgumentCheck)
+library(ustyc) 
+library(ggiraph)
+
+```
+
+```{r functions, echo=FALSE}
+# Import helper functions for building tickers
+
+source("functions.R")
+
+```
+
+```{r introcompute, echo=FALSE}
+# Performs initial logic to build 8 nearest ticker symbols for display later
+
+
+Today <- Sys.Date()
+mo <- as.integer(month(Today))
+Year <- as.numeric(year(Today))
+
+MonthCode <- month_symbol(mo)
+cm <- get_nearby_corn(MonthCode)
+sm <- get_nearby_soy(MonthCode)
+
+corn_contract8 <- corn_forward8(cm, Year)
+corn_contract8 <- cbind(corn_contract8, "", "","","", "")
+wheat_contract8 <- corn_forward8(cm, Year)
+wheat_contract8 <- cbind(wheat_contract8, "", "","","", "")
+
+soy_contract8 <- soy_forward8(sm, Year)
+soy_contract8 <- cbind(soy_contract8, "", "","","", "")
+
+codes <- c('F', 'G', 'H', 'J', 'K', 'M', 'N', 'Q', 'U', 'V', 'X', 'Z')
+
+# Fetch Corn Quotes
+for (i in 1:8){
+ 
+  corn_contract8[i, 3] <- paste0("C", corn_contract8[i,1], substr(corn_contract8[i, 2], 3,4), ".", "CBT")
+  corn_contract8[i, 4] <- as.numeric(getQuote(corn_contract8[i,3])[2])
+  corn_contract8[i, 5] <- format(as.Date(paste0(sprintf("%02d", match(corn_contract8[i,1], codes)), "/", "14", "/", substr(corn_contract8[i, 2], 3,4)), "%m/%d/%y"), "%Y-%m-%d")
+  corn_contract8[i, 6] <- as.Date(corn_contract8[i, 5]) - Sys.Date()
+}
+
+# Fetch Wheat Quotes
+for (i in 1:8){
+  
+  wheat_contract8[i, 3] <- paste0("W", wheat_contract8[i,1], substr(wheat_contract8[i, 2], 3,4), ".", "CBT")
+  wheat_contract8[i, 4] <- as.numeric(getQuote(wheat_contract8[i,3])[2])
+  wheat_contract8[i, 5] <- format(as.Date(paste0(sprintf("%02d", match(wheat_contract8[i,1], codes)), "/", "14", "/", substr(wheat_contract8[i, 2], 3,4)), "%m/%d/%y"), "%Y-%m-%d")
+  wheat_contract8[i, 6] <- as.Date(wheat_contract8[i, 5]) - Sys.Date()
+}
+
+# Fetch Soy Quotes
+for (i in 1:8){
+  
+  soy_contract8[i, 3] <- paste0("S", soy_contract8[i,1], substr(soy_contract8[i, 2], 3,4), ".", "CBT")
+  soy_contract8[i, 4] <- as.numeric(getQuote(soy_contract8[i,3])[2])
+  soy_contract8[i, 5] <- format(as.Date(paste0(sprintf("%02d", match(soy_contract8[i,1], codes)), "/", "14", "/", substr(soy_contract8[i, 2], 3,4)), "%m/%d/%y"), "%Y-%m-%d")
+  soy_contract8[i, 6] <- as.Date(soy_contract8[i, 5]) - Sys.Date()
+  
+} 
+
+```
+
+
+```{r plotprep, echo=FALSE}
+# Prep for plotting
+
+colnames(corn_contract8) <- c("Month", "Year", "Contract", "Price", "Expiration", "DTE", "Label")
+colnames(wheat_contract8) <- c("Month", "Year", "Contract", "Price", "Expiration", "DTE", "Label")
+colnames(soy_contract8) <- c("Month", "Year", "Contract", "Price", "Expiration", "DTE", "Label")
+
+corn_contract8 <- as.data.frame(corn_contract8)
+corn_contract8$Contract <- substr(corn_contract8$Contract, 1,4)
+corn_contract8$DTE <- as.numeric(as.character(corn_contract8$DTE))
+corn_contract8$Price <- as.numeric(as.character(corn_contract8$Price))
+corn_contract8$Label <- paste(corn_contract8$Contract, corn_contract8$Price)
+C_DRet30 <- as.numeric(as.character(round(diff( corn_contract8$Price)/diff(corn_contract8$DTE)*30, digits = 2)))
+c_label2 <- paste(corn_contract8$Contract[-8], C_DRet30)
+
+wheat_contract8 <- as.data.frame(wheat_contract8)
+wheat_contract8$Contract <- substr(wheat_contract8$Contract, 1,4)
+wheat_contract8$DTE <- as.numeric(as.character(wheat_contract8$DTE))
+wheat_contract8$Price <- as.numeric(as.character(wheat_contract8$Price))
+wheat_contract8$Label <- paste(wheat_contract8$Contract, wheat_contract8$Price)
+w_DRet30 <- round(diff( wheat_contract8$Price)/diff(wheat_contract8$DTE)*30, digits = 2)
+w_label2 <- paste(wheat_contract8$Contract[-8], w_DRet30)
+
+
+soy_contract8 <- as.data.frame(soy_contract8)
+soy_contract8$Contract <- substr(soy_contract8$Contract, 1,4)
+soy_contract8$DTE <- as.numeric(as.character(soy_contract8$DTE))
+soy_contract8$Price <- as.numeric(as.character(soy_contract8$Price))
+soy_contract8$Label <- paste(soy_contract8$Contract, soy_contract8$Price)
+s_DRet30 <- round(diff( soy_contract8$Price)/diff(soy_contract8$DTE)*30, digits = 2)
+s_label2 <- paste(soy_contract8$Contract[-8], s_DRet30)
+
+corn_ret_store <- as.data.frame(cbind(c_label2, C_DRet30, corn_contract8$DTE[-8]))
+colnames(corn_ret_store) <- c("Label", "DRet30", "DTE" )
+corn_ret_store$DTE <- as.numeric(as.character(corn_ret_store$DTE))
+corn_ret_store$DRet30 <- as.numeric(as.character(corn_ret_store$DRet30))
+corn_ret_store$DTE <- as.numeric(as.character(corn_ret_store$DTE))
+
+wheat_ret_store <- as.data.frame(cbind(w_label2, w_DRet30, wheat_contract8$DTE[-8]))
+colnames(wheat_ret_store) <- c("Label", "DRet30", "DTE")
+wheat_ret_store$DTE <- as.numeric(as.character(wheat_ret_store$DTE))
+wheat_ret_store$DRet30 <- as.numeric(as.character(wheat_ret_store$DRet30))
+wheat_ret_store$DTE <- as.numeric(as.character(wheat_ret_store$DTE))
+
+soy_ret_store <- as.data.frame(cbind(s_label2, s_DRet30, soy_contract8$DTE[-8]))
+colnames(soy_ret_store) <- c("Label", "DRet30", "DTE")
+soy_ret_store$DTE <- as.numeric(as.character(soy_ret_store$DTE))
+soy_ret_store$DRet30 <- as.numeric(as.character(soy_ret_store$DRet30))
+soy_ret_store$DTE <- as.numeric(as.character(soy_ret_store$DTE))
+```
+
+
+```{r ggplots, echo=FALSE}
+# Define the ggplots
+c <- ggplot(corn_contract8, aes(DTE, Price, color = Price)) + 
+      xlim(c(0, 600)) +
+      geom_line(size = .75) +
+      expand_limits(y=c(min(corn_contract8$Price)-50, max(corn_contract8$Price)+50)) +
+      geom_point_interactive(aes(tooltip = Label), size = 2) +
+      theme_bw(base_size = 14) +  theme(plot.title = element_text(hjust = 0.5), legend.position="none") + 
+      labs(x = "Days to Expiration", y = "Price of Corn in Cents", title = "Corn Forward Curve")
+
+
+
+w <- ggplot(wheat_contract8, aes(DTE, Price, color = Price)) + 
+      xlim(c(0, 600)) +
+      geom_line(size = .75) +
+      expand_limits(y=c(min(wheat_contract8$Price)-50, max(wheat_contract8$Price)+50)) +
+      geom_point_interactive(aes(tooltip = Label), size = 2) +
+      theme_bw(base_size = 14) +  theme(plot.title = element_text(hjust = 0.5), legend.position="none") + 
+      labs(x = "Days to Expiration", y = "Price of wheat in Cents", title = "Chicago Wheat Forward Curve")
+
+
+
+s <- ggplot(soy_contract8, aes(DTE, Price, color = Price)) + 
+      xlim(c(0, 600)) +
+      geom_line(size = .75) +
+      expand_limits(y=c(min(soy_contract8$Price)-50, max(soy_contract8$Price)+50)) +
+      geom_point_interactive(aes(tooltip = Label), size = 2) +
+      theme_bw(base_size = 14) +  theme(plot.title = element_text(hjust = 0.5), legend.position="none") + 
+      labs(x = "Days to Expiration", y = "Price of Soybean in Cents", title = "Soybean Forward Curve")
+
+c_ret <- ggplot(corn_ret_store, aes(DTE, DRet30,  color = DRet30)) + 
+      xlim(c(0, 600)) +
+      geom_line(size = .75) +
+      expand_limits(y=c(min(corn_ret_store$DRet30)-10, max(corn_ret_store$DRet30)+10)) +
+      geom_point_interactive(aes(tooltip = Label), size = 2) +
+      theme_bw(base_size = 14) +  theme(plot.title = element_text(hjust = 0.5), legend.position="none") + 
+          labs(x = "Days to Expiration", y = "30 Day Return in Cents", title = "Corn 30 Day Return to Storage")
+
+
+
+w_ret <- ggplot(wheat_ret_store, aes(DTE, DRet30, color = DRet30)) + 
+      xlim(c(0, 600)) +
+      geom_line(size = .75) +
+      expand_limits(y=c(min(wheat_ret_store$DRet30)-10, max(wheat_ret_store$DRet30)+10)) +
+      geom_point_interactive(aes(tooltip = Label), size = 2) +
+      theme_bw(base_size = 14) +  theme(plot.title = element_text(hjust = 0.5), legend.position="none") + 
+          labs(x = "Days to Expiration", y = "30 Day Return in Cents", title = "Wheat 30 Day Return to Storage")
+
+
+s_ret <- ggplot(soy_ret_store, aes(DTE, DRet30, color = DRet30)) + 
+      xlim(c(0, 600)) +
+      geom_line(size = .75) +
+      expand_limits(y=c(min(soy_ret_store$DRet30)-10, max(soy_ret_store$DRet30)+10)) +
+      geom_point_interactive(aes(tooltip = Label), size = 2) +
+      theme_bw(base_size = 14) +  theme(plot.title = element_text(hjust = 0.5), legend.position="none") + 
+          labs(x = "Days to Expiration", y = "30 Day Return in Cents", title = "Soybean 30 Day Return to Storage")
+
+```
+
+
+
+```{r treas, echo=FALSE, warning=FALSE, message=FALSE}
+# For Treasury Yields
+
+t <-getYieldCurve(year = Year)
+i <- dim(t$df)[1]
+
+t <- t$df[i,]
+t <- as.data.frame(cbind(colnames(t), t(t)))
+DATE <- colnames(t)[2]
+colnames(t) <- c("Maturity", "Yield")
+t$Maturity <- substr(t$Maturity, 4, 100)
+t$Maturity <- factor(t$Maturity, levels = t$Maturity)
+t$Yield <- as.numeric(as.character(t$Yield))
+t <- t[-dim(t)[1],]
+treas_plot <- ggplot(t, aes(Maturity, Yield, group = 1, color = Yield)) + 
+      geom_line(size = .75) +
+      expand_limits(y=c(min(t$Yield)-1, max(t$Yield)+1)) +
+      geom_point_interactive(aes(tooltip = Yield), size = 2) +
+      theme_bw(base_size = 14) +  theme(plot.title = element_text(hjust = 0.5), legend.position="none", axis.text.x  = element_text(angle=45)) + 
+              labs(x = "Maturities", y = "Yields", title = "US Treasury Yields")
+
+
+
+```
+
+
+
+```{r, echo = FALSE}
+shinyApp(
+  
+  ui = fluidPage(
+    navlistPanel(
+     
+       tabPanel("Ag Commodity Futures Forward Curves", ggiraphOutput("CornPlot"), ggiraphOutput("SoyPlot"),  ggiraphOutput("WheatPlot")),
+       tabPanel("Ag commodity 30 Day Returns to Storage", ggiraphOutput("CornRetPlot"), ggiraphOutput("SoyRetPlot"), ggiraphOutput("WheatRetPlot")),
+       tabPanel("Yields on Treasury Bills and Bonds", ggiraphOutput("TreasPlot"))
+     ) 
+  ),
+  
+  server = function(input, output) {
+    output$CornPlot <- renderggiraph({
+    ggiraph(code = print(c))
+  })
+  
+  output$CornRetPlot <- renderggiraph({
+    ggiraph(code = print(c_ret))
+  })
+  
+  output$SoyPlot <- renderggiraph({
+    ggiraph(code = print(s))
+  })
+  
+  output$SoyRetPlot <- renderggiraph({
+    ggiraph(code = print(s_ret))
+  })
+  
+  output$WheatPlot <- renderggiraph({
+    ggiraph(code = print(w))
+  })
+  
+  output$WheatRetPlot <- renderggiraph({
+    ggiraph(code = print(w_ret))
+  })
+  
+  output$TreasPlot <- renderggiraph({
+    ggiraph(code = print(treas_plot))
+  })
+  },
+  
+  options=list(
+    width="100%", height=2000
+  )
+)
+```
+
+The return plotted is the implied 30 day return to storage between the labeled contract 
+              and the next deferred. For example, the point labeled 'CHXX' plots the return for storing from 
+              March 14th to 30 days later. The return is calculated by '(CKXX - CHXX)/(Days between H and K)*30.
+              
+              Data from https://www.treasury.gov/resource-center/data-chart-center/interest-rates/Pages/TextView.aspx?data=yield"
