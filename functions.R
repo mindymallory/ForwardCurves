@@ -26,8 +26,8 @@ month_symbol <- function(monthint){
 
 
 get_nearby_corn <- function(MonthCode){
-  codes <- c('F', 'G', 'H', 'J', 'K', 'M', 'N', 'Q', 'U', 'V', 'X', 'Z')
-  corn_codes <- c('H', 'K','N', 'U', 'Z')
+  codes <- c('F', 'G', 'H', 'J', 'K', 'M', 'N', 'Q', 'U', 'V', 'X', 'Z', 'F', 'G', 'H')
+  corn_codes <- c('H', 'K','N', 'U', 'Z', 'H')
   
   while(is.na(match(MonthCode,corn_codes)) == TRUE){
     MonthCode <- match(MonthCode,codes)+1
@@ -47,7 +47,7 @@ corn_forward8 <- function(MonthCode, Year){
 }
 
 get_nearby_soy <- function(MonthCode){
-  codes <- c('F', 'G', 'H', 'J', 'K', 'M', 'N', 'Q', 'U', 'V', 'X', 'Z')
+  codes <- c('F', 'G', 'H', 'J', 'K', 'M', 'N', 'Q', 'U', 'V', 'X', 'Z', 'F')
   soy_codes <- c('F', 'H', 'K','N', 'Q', 'U', 'X')
   
   while(is.na(match(MonthCode,soy_codes)) == TRUE){

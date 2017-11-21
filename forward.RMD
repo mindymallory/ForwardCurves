@@ -2,10 +2,11 @@
 title: "Forward Curves"
 runtime: shiny
 output: 
-  html_notebook: 
+  html_document: 
     code_folding: none
     theme: flatly
     toc: yes
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
@@ -19,6 +20,7 @@ library(xts)
 library(lubridate)
 library(ArgumentCheck)
 library(ustyc) 
+library(officer)
 library(ggiraph)
 
 ```
@@ -222,6 +224,9 @@ treas_plot <- ggplot(t, aes(Maturity, Yield, group = 1, color = Yield)) +
 ```
 
 
+# Agricultural Commodities
+
+Corn, soybean, and Chicago wheat forward curves are calculated.
 
 ```{r, echo = FALSE}
 shinyApp(
@@ -270,6 +275,10 @@ shinyApp(
   )
 )
 ```
+
+
+
+
 
 The return plotted is the implied 30 day return to storage between the labeled contract 
               and the next deferred. For example, the point labeled 'CHXX' plots the return for storing from 
